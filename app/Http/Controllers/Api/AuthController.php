@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -45,25 +46,37 @@ class AuthController extends Controller
     //update image profile & face_embedding
     public function updateProfile(Request $request)
     {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'face_embedding' => 'required',
-        ]);
+        try {
+            // Validasi request
+            $request->validate([
+                // 'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'face_embedding' => 'required',
+            ]);
 
-        $user = $request->user();
-        $image = $request->file('image');
-        $face_embedding = $request->face_embedding;
+            $user = $request->user();
+            // $image = $request->file('image');
+            $face_embedding = $request->face_embedding;
 
-        // //save image
-        $image->storeAs('public/images', $image->hashName());
-        $user->image_url = $image->hashName();
-        $user->face_embedding = $face_embedding;
-        $user->save();
+            // Simpan gambar ke public/images/
+            // $imageName = $image->hashName(); // Ambil nama hash unik
+            // $image->move(public_path('images'), $imageName);
 
-        return response([
-            'message' => 'Profile updated',
-            'user' => $user,
-        ], 200);
+            // Simpan hanya path tujuan di database
+            // $user->image_url = 'images/' . $imageName;
+            $user->face_embedding = $face_embedding;
+            $user->save();
+
+            return response()->json([
+                'message' => 'Profile updated',
+                'user' => $user,
+                'image_url' => asset($user->image_url) // URL lengkap gambar
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update profile',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     //update fcm token
